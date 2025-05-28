@@ -1,78 +1,67 @@
-# Sarissa Security Platform
+# Sarissa
 
-A comprehensive security platform for vulnerability assessment and management.
+A modern network penetration testing tool with a GUI interface, inspired by Sparta and ported to Rust.
 
-## ⚠️ Important Disclaimer
+## Features
+- Fast network scanning and vulnerability detection
+- Exploit execution and chaining (Metasploit integration)
+- Plugin system with marketplace
+- Real-time collaboration and workspaces
+- Role-based access control and audit logging
+- Dashboard with real-time metrics and Prometheus integration
+- Modern, cross-platform GUI (egui/eframe)
 
-**USE AT YOUR OWN RISK**
+## Quickstart
 
-This software is provided for educational and research purposes only. Please read the full [Disclaimer](docs/DISCLAIMER.md) before using this software. By using Sarissa, you acknowledge that you have read and understood the disclaimer and agree to be bound by its terms.
+### Prerequisites
+- Rust (1.70+ recommended)
+- PostgreSQL (13+)
+- [nmap](https://nmap.org/), [sqlmap](https://sqlmap.org/), and other common security tools in `$PATH`
 
-## 🔒 Privacy-Focused
-
-Sarissa is designed with privacy as a core principle:
-- No data collection or telemetry
-- No internet communication
-- All data stored locally
-- No third-party services
-- Complete control over your data
-
-For detailed privacy information, see our [Privacy and Data Collection](docs/DISCLAIMER.md#privacy-and-data-collection) section.
-
-## Installation
-
-1. Clone this repository:
-```bash
-git clone https://github.com/YOUR_USERNAME/sarissa.git
-cd sarissa
+### Database Setup
+```
+sudo -u postgres createuser sarissa --createdb --login --pwprompt
+sudo -u postgres createdb sarissa --owner=sarissa
+# Set password to 'sarissa' or update config.toml accordingly
 ```
 
-2. Run the setup script:
-```bash
-sudo ./setup.sh
+### Configuration
+Edit `config.toml` to match your environment. See the provided sample for all options.
+
+### Build & Run
+```
+cargo build --release
+./target/release/sarissa
 ```
 
-The setup script will:
-- Install all required dependencies
-- Set up PostgreSQL database
-- Configure the systemd service
-- Build and deploy Sarissa
+### GUI
+- The GUI will launch automatically.
 
-## Configuration
+### Prometheus Metrics
+- Metrics are available at `http://127.0.0.1:8081/metrics` (if your main server is on 8080).
+- Example Prometheus scrape config:
+  ```yaml
+  scrape_configs:
+    - job_name: 'sarissa'
+      static_configs:
+        - targets: ['127.0.0.1:8081']
+  ```
 
-After installation, you'll need to:
-1. Change the default database password in `/opt/sarissa/config.toml`
-2. Review and adjust the configuration file
-3. Set up SSL certificates if needed
+## Directory Structure
+- `src/` - Main application code
+- `migrations/` - Database schema (run automatically on startup)
+- `config.toml` - Main configuration file
 
-## Usage
+## Troubleshooting
+- **Database connection errors:** Ensure PostgreSQL is running and the user/database match your config.
+- **Missing tools:** Ensure required tools (nmap, sqlmap, etc.) are installed and in your `$PATH`.
+- **Metrics not available:** Ensure port 8081 (or your configured metrics port) is open and not blocked.
+- **Log files:** See `logs/` for application logs.
 
-Sarissa runs as a systemd service and is accessible on:
-- Port 8080: Main application
-- Port 8081: API endpoints
-
-## Logs
-
-Logs are available in:
-- `/var/log/sarissa/sarissa.log`
-- `/var/log/sarissa/sarissa.err`
-
-## Docker Support
-
-A Dockerfile is included for containerized deployment. Build and run with:
-```bash
-docker build -t sarissa .
-docker run -p 8080:8080 -p 8081:8081 sarissa
-```
-
-## Documentation
-
-For detailed documentation, please refer to:
-- [Architecture](docs/ARCHITECTURE.md)
-- [API Documentation](docs/API.md)
-- [Contributing Guide](docs/CONTRIBUTING.md)
-- [Disclaimer](docs/DISCLAIMER.md)
+## Security
+- Change all default secrets in `config.toml` before production use.
+- Use strong passwords for database and JWT secrets.
+- Restrict access to the metrics endpoint as needed.
 
 ## License
-
-[Your chosen license] 
+MIT 
