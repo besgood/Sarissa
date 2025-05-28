@@ -360,27 +360,10 @@ done
 echo -e "${YELLOW}Building Sarissa...${NC}"
 cd /opt/sarissa
 
-# Set default repository URL
-REPO_URL="https://github.com/your-org/sarissa.git"
-
-# Clone the repository
-echo -e "${YELLOW}Cloning repository...${NC}"
-if ! git clone "$REPO_URL" .; then
-    handle_error "Failed to clone repository" "git clone --depth 1 $REPO_URL ."
-fi
-
-if ! chown -R sarissa:sarissa .; then
-    handle_error "Failed to set repository ownership"
-fi
-
-# Copy configuration files
-echo -e "${YELLOW}Setting up configuration...${NC}"
-if ! cp config.toml.example config.toml; then
-    handle_error "Failed to copy configuration file"
-fi
-
-if ! chown sarissa:sarissa config.toml; then
-    handle_error "Failed to set configuration file ownership"
+# Build the application
+echo -e "${YELLOW}Building application...${NC}"
+if ! sudo -u sarissa cargo build --release; then
+    handle_error "Failed to build application" "sudo -u sarissa cargo build --release --verbose"
 fi
 
 # Set up scripts
@@ -416,12 +399,6 @@ do
         handle_error "Failed to add cron job: $job"
     fi
 done
-
-# Build the application
-echo -e "${YELLOW}Building application...${NC}"
-if ! sudo -u sarissa cargo build --release; then
-    handle_error "Failed to build application" "sudo -u sarissa cargo build --release --verbose"
-fi
 
 # Set up systemd service
 echo -e "${YELLOW}Setting up systemd service...${NC}"
