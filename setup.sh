@@ -360,14 +360,8 @@ done
 echo -e "${YELLOW}Building Sarissa...${NC}"
 cd /opt/sarissa
 
-# Prompt for repository URL
-echo -e "${YELLOW}Please provide the Sarissa repository URL:${NC}"
-echo -e "${YELLOW}Example: https://github.com/your-org/sarissa.git${NC}"
-read -p "Repository URL: " REPO_URL
-
-if [ -z "$REPO_URL" ]; then
-    handle_error "Repository URL is required"
-fi
+# Set default repository URL
+REPO_URL="https://github.com/your-org/sarissa.git"
 
 # Clone the repository
 echo -e "${YELLOW}Cloning repository...${NC}"
