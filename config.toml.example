@@ -1,0 +1,73 @@
+# Sarissa Configuration File
+
+[server]
+host = "0.0.0.0"
+port = 8080
+api_port = 8081
+workers = 4
+timeout = 30
+max_connections = 1000
+
+[database]
+host = "localhost"
+port = 5432
+name = "sarissa"
+user = "sarissa"
+password = "change_this_password"
+max_connections = 20
+idle_timeout = 300
+
+[security]
+# JWT settings
+jwt_secret = "change_this_secret"
+jwt_expiry = 3600
+# SSL/TLS settings
+ssl_enabled = false
+ssl_cert_path = "/etc/sarissa/ssl/cert.pem"
+ssl_key_path = "/etc/sarissa/ssl/key.pem"
+
+[logging]
+level = "info"
+file = "/var/log/sarissa/sarissa.log"
+max_size = 100
+max_backups = 10
+max_age = 30
+
+[scanning]
+# Scan settings
+max_concurrent_scans = 5
+scan_timeout = 3600
+default_depth = 3
+# Resource limits
+max_memory = 2048
+max_cpu = 2
+
+[notifications]
+# Email settings
+smtp_enabled = false
+smtp_host = "smtp.example.com"
+smtp_port = 587
+smtp_username = "user@example.com"
+smtp_password = "change_this_password"
+smtp_from = "sarissa@example.com"
+
+[backup]
+enabled = true
+schedule = "0 0 * * *"  # Daily at midnight
+retention_days = 30
+backup_path = "/var/backups/sarissa"
+
+[monitoring]
+enabled = true
+prometheus_port = 9090
+health_check_interval = 60
+
+[plugins]
+enabled = true
+plugin_dir = "/opt/sarissa/plugins"
+auto_load = true
+
+[api]
+rate_limit = 100
+rate_limit_window = 60
+cors_allowed_origins = ["http://localhost:8080"] 

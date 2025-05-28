@@ -1,0 +1,13 @@
+/var/log/sarissa/*.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 sarissa sarissa
+    sharedscripts
+    postrotate
+        systemctl reload sarissa
+    endscript
+} 
