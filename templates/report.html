@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sarissa Scan Report</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; padding: 20px; color: #333; background-color: #fdfdfd; }
+        .container { max-width: 1200px; margin: 0 auto; background-color: #fff; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #0056b3; }
+        h1 { border-bottom: 2px solid #0056b3; padding-bottom: 10px; }
+        h2 { border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 30px; }
+        .host-block { border: 1px solid #ccc; padding: 15px; margin-bottom: 25px; border-radius: 5px; background: #f9f9f9; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 0.9em; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }
+        th { background-color: #eef; }
+        pre { background: #f0f0f0; padding: 10px; border-radius: 3px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; }
+        .service-details { margin-left: 15px; font-size: 0.9em; color: #555; }
+        .credentials { color: red; font-weight: bold; }
+        .vuln { margin-bottom: 5px; padding: 5px; border-left: 3px solid orange; background-color: #fff8e1;}
+        .vuln-critical { border-left-color: red; background-color: #ffebee; }
+        .vuln-high { border-left-color: darkorange; background-color: #fff3e0; }
+        .vuln-medium { border-left-color: gold; background-color: #fffde7; }
+        .vuln-low { border-left-color: green; background-color: #e8f5e9; }
+        a { color: #0066cc; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .timestamp { font-size: 0.8em; color: #777; }
+        .monospace { font-family: monospace; }
+        .tag { background-color: #e0e0e0; color: #333; padding: 2px 6px; border-radius: 3px; font-size: 0.8em; margin-right: 5px; }
+        .severity-Critical { color: red; font-weight: bold; }
+        .severity-High { color: darkorange; font-weight: bold; }
+        .severity-Medium { color: gold; }
+        .severity-Low { color: green; }
+        .severity-Informational { color: blue; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sarissa Scan Report</h1>
+        <p class="timestamp">Generated on: {{ generation_time }}</p>
+        <p>Total Hosts Found: {{ hosts.len() }}</p>
+
+        {% for host in hosts %}
+        <div class="host-block">
+            <h2>Host: {{ host.display_name() }} ({{ host.ip_address }})</h2>
+            <p><strong>Status:</strong> <span class="monospace">{{ host.status }}</span></p>
+            {% if let Some(mac) = host.mac_address %}<p><strong>MAC Address:</strong> <span class="monospace">{{ mac }}</span></p>{% endif %}
+            {% if !host.hostnames.is_empty() %}<p><strong>Hostnames:</strong> <span class="monospace">{{ host.hostnames.join(", ") }}</span></p>{% endif %}
+            {% if let Some(os) = host.best_os_guess() %}<p><strong>OS Guess (Nmap):</strong> <span class="monospace">{{ os }}</span></p>{% endif %}
+
+            {% if let Some(shodan) = &host.shodan_info %}
+                <h3>Shodan Intelligence <span class="timestamp">(Last Updated: {{ shodan.last_updated.format("%Y-%m-%d %H:%M") }})</span></h3>
+                {% if let Some(org) = &shodan.organization %}<p><strong>Organization:</strong> {{ org }}</p>{% endif %}
+                {% if let Some(os) = &shodan.os %}<p><strong>OS (Shodan):</strong> {{ os }}</p>{% endif %}
+                {% if let Some(ports) = &shodan.ports %}<p><strong>Open Ports (Shodan):</strong> {{ ports.iter().map(|p| p.to_string()).collect::<Vec<_>>().join(", ") }}</p>{% endif %}
+                {% if let Some(tags) = &shodan.tags %}<p><strong>Tags:</strong> {% for tag in tags %}<span class="tag">{{tag}}</span> {% endfor %}</p>{% endif %}
+                {% if let Some(vulns) = &shodan.vulns %}{% if !vulns.is_empty() %}<p><strong>CVEs (Shodan):</strong> {{ vulns.join(", ") }}</p>{% endif %}{% endif %}
+            {% endif %}
+
+            {% if let Some(vt_ip) = &host.virustotal_ip_report %}
+                <h3>VirusTotal IP Reputation <span class="timestamp">(Last Fetched: {{ vt_ip.last_fetched.format("%Y-%m-%d %H:%M") }})</span></h3>
+                <p><strong>Analysis:</strong> Malicious: {{ vt_ip.attributes.last_analysis_stats.malicious }}, Suspicious: {{ vt_ip.attributes.last_analysis_stats.suspicious }}, Harmless: {{ vt_ip.attributes.last_analysis_stats.harmless }}, Undetected: {{ vt_ip.attributes.last_analysis_stats.undetected }}</p>
+                {% if let Some(asn) = vt_ip.attributes.asn %}<p><strong>ASN:</strong> {{ asn }} ({{ vt_ip.attributes.as_owner.as_deref().unwrap_or("N/A") }})</p>{% endif %}
+                {% if let Some(country) = &vt_ip.attributes.country %}<p><strong>Country:</strong> {{ country }}</p>{% endif %}
+            {% endif %}
+
+            {% if let Some(enum_res) = &host.enum_results %}
+                <h3>Enumeration Results (Enum4Linux)</h3>
+                {% if let Some(os) = &enum_res.os_info %}<p><strong>OS (Enum):</strong> {{ os }}</p>{% endif %}
+                {% if let Some(sid) = &enum_res.domain_sid %}<p><strong>Domain SID:</strong> {{ sid }}</p>{% endif %}
+                {% if !enum_res.users.is_empty() %}<p><strong>Users:</strong> {{ enum_res.users.join(", ") }}</p>{% endif %}
+                {% if !enum_res.shares.is_empty() %}<p><strong>Shares (Enum):</strong> {{ enum_res.shares.join(", ") }}</p>{% endif %}
+            {% endif %}
+
+            {% if let Some(note_content) = notes.get(&host.ip_address.to_string()) %}
+                {% if !note_content.is_empty() %}
+                    <h3>Notes</h3>
+                    <pre>{{ note_content }}</pre>
+                {% endif %}
+            {% endif %}
+
+            <h3>Services</h3>
+            {% if host.services.is_empty() %}
+                <p>No open services found by Nmap.</p>
+            {% else %}
+                <table>
+                    <thead>
+                        <tr><th>Port/Proto</th><th>State</th><th>Service</th><th>Product/Version</th><th>CPE</th><th>Details & Findings</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for service in &host.services %}
+                        <tr>
+                            <td>{{ service.port }}/{{ service.protocol }}</td>
+                            <td>{{ service.state }}</td>
+                            <td>{{ service.name }}</td>
+                            <td>{{ service.product.as_deref().unwrap_or("") }} {{ service.version.as_deref().unwrap_or("") }}</td>
+                            <td class="monospace">{{ service.cpe.as_deref().unwrap_or("N/A") }}</td>
+                            <td>
+                                {% if let Some((user, pass)) = &service.found_credentials %}
+                                    <div class="credentials">Found Credentials: {{ user }} / {{ pass }}</div>
+                                {% endif %}
+                                {% if !service.script_outputs.is_empty() %}
+                                    <div class="service-details"><strong>Nmap Scripts:</strong><br>
+                                    {% for (id, out) in &service.script_outputs %}
+                                        <code>{{ id }}: {{ out.lines().next().unwrap_or("...") }}</code><br>
+                                    {% endfor %}
+                                    </div>
+                                {% endif %}
+                                {% if let Some(nikto) = &service.nikto_result %}
+                                     <div class="service-details"><strong>Nikto ({{nikto.vulnerabilities.len()}} findings):</strong><br>
+                                     {% for vuln in nikto.vulnerabilities.iter().take(3) %} {# Limit for brevity #}
+                                        <code>{{ vuln.message.split('\n').next().unwrap_or("...") }}</code><br>
+                                     {% endfor %}
+                                     {% if nikto.vulnerabilities.len() > 3 %}... and more.{% endif %}
+                                     </div>
+                                {% endif %}
+                                {% if !service.ffuf_results.is_empty() %}
+                                    <div class="service-details"><strong>FFUF ({{service.ffuf_results.len()}} found):</strong><br>
+                                    {% for ff_res in service.ffuf_results.iter().take(3) %} {# Limit for brevity #}
+                                        <code>{{ ff_res.status_code }} - {{ ff_res.url }} ({{ ff_res.length }}B)</code><br>
+                                    {% endfor %}
+                                    {% if service.ffuf_results.len() > 3 %}... and more.{% endif %}
+                                    </div>
+                                {% endif %}
+                                {% if !service.matched_nvd_cves.is_empty() %}
+                                    <div class="service-details"><strong>NVD CVEs:</strong><br>
+                                    {% for cve in &service.matched_nvd_cves %}
+                                        <div class="vuln vuln-{{cve.base_severity_v3.as_deref().unwrap_or("Info")|lower}}">
+                                        <a href="https://nvd.nist.gov/vuln/detail/{{cve.cve_id}}">{{ cve.cve_id }}</a> ({{cve.base_score_v3.unwrap_or(0.0)}} - {{cve.base_severity_v3.as_deref().unwrap_or("N/A")}})
+                                        <p style="font-size:0.9em; margin-left:10px;">{{ cve.description_en.as_deref().unwrap_or("No description.") }}</p>
+                                        </div>
+                                    {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+
+             {% if let Some(smb_results) = &host.smbmap_results %}
+                {% if !smb_results.shares.is_empty() %}
+                <h3>SMB Shares (SMBMap)</h3>
+                <table>
+                    <thead><tr><th>Name</th><th>Permissions</th><th>Comment</th><th>Contents (Partial)</th></tr></thead>
+                    <tbody>
+                    {% for share in &smb_results.shares %}
+                        <tr>
+                            <td>{{share.name}}</td>
+                            <td>{{share.permissions}}</td>
+                            <td>{{share.comment.as_deref().unwrap_or("")}}</td>
+                            <td>
+                                {% if let Some(contents) = &share.contents %}
+                                    {% for item in contents.iter().take(3) %} {# Limit #}
+                                     <span class="monospace">[{{item.item_type}}] {{item.path}}</span><br>
+                                    {% endfor %}
+                                    {% if contents.len() > 3 %}... and more.{% endif %}
+                                {% else %}
+                                    N/A or Not Listed
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+            {% endif %}
+
+
+            {% if !host.nuclei_findings.is_empty() %}
+            <h3>Nuclei Findings</h3>
+                {% for finding in &host.nuclei_findings %}
+                    <div class="vuln vuln-{{finding.info.severity|lower}}">
+                        <strong>[{{ finding.info.severity }}] {{ finding.info.name }}</strong> (Template: {{ finding.template_id }})<br>
+                        Matched at: {{ finding.matched_at.as_deref().unwrap_or("N/A") }}
+                        {% if let Some(desc) = &finding.info.description %}<p style="font-size:0.9em; margin-left:10px;">{{desc}}</p>{% endif %}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% if !host.plugin_findings.is_empty() %}
+            <h3>Plugin Findings</h3>
+                {% for finding in &host.plugin_findings %}
+                     <div class="vuln vuln-{{finding.severity.as_deref().unwrap_or("Informational")|lower}}">
+                        <strong>[{{ finding.severity.as_deref().unwrap_or("INFO") }}] {{ finding.plugin_display_name }}: {{ finding.finding_summary }}</strong> <span class="timestamp">({{finding.timestamp.format("%Y-%m-%d %H:%M")}})</span>
+                        {% if let Some(detail) = &finding.finding_detail %}<pre>{{detail}}</pre>{% endif %}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
