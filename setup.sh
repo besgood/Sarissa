@@ -32,12 +32,7 @@ apt-get install -y \
     postgresql-contrib \
     ca-certificates \
     nmap \
-    sqlmap \
-    prometheus \
-    node-exporter \
-    bc \
-    cron \
-    logrotate
+    sqlmap
 
 # Install Rust
 echo -e "${YELLOW}Installing Rust...${NC}"
@@ -58,13 +53,8 @@ fi
 echo -e "${YELLOW}Creating necessary directories...${NC}"
 mkdir -p /opt/sarissa
 mkdir -p /var/log/sarissa
-mkdir -p /var/backups/sarissa
-mkdir -p /etc/sarissa/ssl
-mkdir -p /opt/sarissa/plugins
 chown -R sarissa:sarissa /opt/sarissa
 chown -R sarissa:sarissa /var/log/sarissa
-chown -R sarissa:sarissa /var/backups/sarissa
-chown -R sarissa:sarissa /etc/sarissa
 
 # Set up PostgreSQL
 echo -e "${YELLOW}Setting up PostgreSQL...${NC}"
@@ -75,48 +65,14 @@ sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE sarissa TO sarissa;"
 # Clone and build Sarissa
 echo -e "${YELLOW}Building Sarissa...${NC}"
 cd /opt/sarissa
-
-# Prompt for repository URL
-echo -e "${YELLOW}Please provide the Sarissa repository URL:${NC}"
-echo -e "${YELLOW}Example: https://github.com/your-org/sarissa.git${NC}"
-read -p "Repository URL: " REPO_URL
-
-if [ -z "$REPO_URL" ]; then
-    echo -e "${RED}Repository URL is required${NC}"
-    exit 1
-fi
-
-# Clone the repository
-echo -e "${YELLOW}Cloning repository...${NC}"
-git clone "$REPO_URL" .
+git clone https://github.com/your-org/sarissa.git .
 chown -R sarissa:sarissa .
+sudo -u sarissa cargo build --release
 
 # Copy configuration files
 echo -e "${YELLOW}Setting up configuration...${NC}"
 cp config.toml.example config.toml
 chown sarissa:sarissa config.toml
-
-# Set up scripts
-echo -e "${YELLOW}Setting up utility scripts...${NC}"
-chmod +x scripts/*.sh
-cp scripts/backup.sh /usr/local/bin/sarissa-backup
-cp scripts/health_check.sh /usr/local/bin/sarissa-health-check
-cp scripts/maintenance.sh /usr/local/bin/sarissa-maintenance
-
-# Set up log rotation
-echo -e "${YELLOW}Setting up log rotation...${NC}"
-cp logrotate.d/sarissa /etc/logrotate.d/
-chmod 644 /etc/logrotate.d/sarissa
-
-# Set up cron jobs
-echo -e "${YELLOW}Setting up scheduled tasks...${NC}"
-(crontab -u sarissa -l 2>/dev/null; echo "0 0 * * * /usr/local/bin/sarissa-backup") | crontab -u sarissa -
-(crontab -u sarissa -l 2>/dev/null; echo "*/5 * * * * /usr/local/bin/sarissa-health-check") | crontab -u sarissa -
-(crontab -u sarissa -l 2>/dev/null; echo "0 0 * * 0 /usr/local/bin/sarissa-maintenance clean") | crontab -u sarissa -
-
-# Build the application
-echo -e "${YELLOW}Building application...${NC}"
-sudo -u sarissa cargo build --release
 
 # Set up systemd service
 echo -e "${YELLOW}Setting up systemd service...${NC}"
@@ -124,15 +80,6 @@ cp sarissa.service /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable sarissa
 systemctl start sarissa
-
-# Set up Prometheus monitoring
-echo -e "${YELLOW}Setting up monitoring...${NC}"
-cp prometheus.yml /etc/prometheus/
-cp rules/sarissa_alerts.yml /etc/prometheus/rules/
-systemctl enable prometheus
-systemctl enable node-exporter
-systemctl start prometheus
-systemctl start node-exporter
 
 # Check service status
 echo -e "${YELLOW}Checking service status...${NC}"
@@ -149,14 +96,7 @@ echo "1. Sarissa is running on ports 8080 and 8081"
 echo "2. Logs are available in /var/log/sarissa/"
 echo "3. Configuration file is at /opt/sarissa/config.toml"
 echo "4. Database credentials are in the configuration file"
-echo "5. Backup script is installed at /usr/local/bin/sarissa-backup"
-echo "6. Health check script is installed at /usr/local/bin/sarissa-health-check"
-echo "7. Maintenance script is installed at /usr/local/bin/sarissa-maintenance"
-echo "8. Prometheus monitoring is available on port 9090"
 echo -e "${YELLOW}Please make sure to:${NC}"
 echo "1. Change the default database password"
 echo "2. Review and adjust the configuration file"
-echo "3. Set up SSL certificates if needed"
-echo "4. Configure backup retention settings"
-echo "5. Set up monitoring alerts"
-echo "6. Review log rotation settings" 
+echo "3. Set up SSL certificates if needed" 
