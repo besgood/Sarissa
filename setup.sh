@@ -224,6 +224,18 @@ if ! pg_isready -h localhost -p 5432 -U postgres >/dev/null 2>&1; then
     handle_error "PostgreSQL is not running or not accessible" "systemctl restart postgresql && sleep 5 && pg_isready -h localhost -p 5432 -U postgres"
 fi
 
+# Check for collation version mismatch
+echo -e "${YELLOW}Checking for collation version mismatch...${NC}"
+if sudo -u postgres psql -c "ALTER DATABASE template1 REFRESH COLLATION VERSION;" 2>&1 | grep -q "collation version mismatch"; then
+    echo -e "${YELLOW}Collation version mismatch detected. Attempting to fix...${NC}"
+    sudo -u postgres psql -c "ALTER DATABASE template1 REFRESH COLLATION VERSION;"
+    if [ $? -ne 0 ]; then
+        handle_error "Failed to fix collation version mismatch" "sudo -u postgres psql -c 'ALTER DATABASE template1 REFRESH COLLATION VERSION;'"
+    fi
+else
+    echo -e "${GREEN}No collation version mismatch detected.${NC}"
+fi
+
 # Install Prometheus
 echo -e "${YELLOW}Installing Prometheus...${NC}"
 # Add Prometheus repository
