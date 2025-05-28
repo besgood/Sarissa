@@ -1,0 +1,50 @@
+[database]
+url = "postgres://sarissa:sarissa@localhost/sarissa"
+max_connections = 10
+min_connections = 2
+connection_timeout = 30
+idle_timeout = 300
+
+[security]
+jwt_secret = "supersecretjwtkey"
+token_expiry = 3600
+refresh_token_expiry = 86400
+password_hash_cost = 12
+rate_limit_requests = 100
+rate_limit_duration = 60
+allowed_origins = ["*"]
+
+[logging]
+level = "info"
+file = "logs/sarissa.log"
+max_size = 10485760 # 10MB
+max_files = 5
+rotation_interval = 86400 # 1 day
+
+[server]
+host = "127.0.0.1"
+port = 8080
+workers = 4
+max_connections = 100
+keep_alive = 60
+timeout = 30
+
+[plugins]
+marketplace_url = "https://plugins.sarissa.io"
+plugin_dir = "plugins"
+max_plugins = 100
+update_check_interval = 3600
+
+[exploits]
+metasploit_path = ""
+metasploit_api_key = ""
+sandbox_dir = "sandbox"
+timeout = 60
+memory_limit = 268435456 # 256MB
+cpu_limit = 60
+
+[collaboration]
+max_workspaces = 10
+max_members_per_workspace = 20
+event_retention_days = 30
+notification_webhook = "" 
